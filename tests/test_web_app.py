@@ -9,6 +9,7 @@ pytest.importorskip("multipart")
 pytest.importorskip("reportlab")
 pytest.importorskip("regex")
 pytest.importorskip("httpx")
+pytest.importorskip("jinja2")
 Document = pytest.importorskip("docx").Document
 from fastapi.testclient import TestClient
 
@@ -24,6 +25,33 @@ def test_reference_and_frontend():
     ref = client.get('/api/reference').json()
     assert len(ref['hidden']) == 8 and len(ref['visible']) == 14
     assert {v['unicode_code'] for v in ref['hidden']} >= {'U+200B', 'U+202E'}
+
+
+def test_modular_frontend_renders_unique_hooks_and_serves_assets():
+    from html.parser import HTMLParser
+    from collections import Counter
+
+    class Hooks(HTMLParser):
+        def __init__(self):
+            super().__init__()
+            self.ids = []
+            self.modules = []
+
+        def handle_starttag(self, tag, attrs):
+            attrs = dict(attrs)
+            if "id" in attrs:
+                self.ids.append(attrs["id"])
+            if tag == "script" and attrs.get("type") == "module":
+                self.modules.append(attrs.get("src"))
+
+    hooks = Hooks()
+    hooks.feed(client.get('/').text)
+    assert not [key for key, count in Counter(hooks.ids).items() if count > 1]
+    assert {'inputText', 'analyzeBtn', 'cleanBtn', 'xrayText', 'findingsBody', 'themeToggle'} <= set(hooks.ids)
+    assert hooks.modules == ['/script.js']
+    for path in ('/assets/js/core.js', '/assets/js/actions.js', '/assets/js/views.js',
+                 '/assets/css/tokens.css', '/assets/css/layout.css', '/assets/css/responsive.css'):
+        assert client.get(path).status_code == 200
 
 
 def test_analysis_uses_codepoint_offsets_and_honest_notice():

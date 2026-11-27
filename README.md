@@ -89,6 +89,12 @@ Complex-script shaping may still require review. The upload limit is 10 MB and
 text is limited to 500,000 Unicode code points. Downloads contain the reviewed
 text, not a guarantee that hidden or statistical watermarks are absent.
 
+The frontend is composed of server-rendered Jinja partials in `templates/partials/`.
+Shared visual tokens and responsive components live under `static/css/`, and the
+browser logic is split into core, actions, and view modules under `static/js/`.
+`script.js` wires the components together; `styles.css` imports the CSS partials.
+The frontend has no build step and serves its assets from the FastAPI app.
+
 API endpoints: `/api/reference`, `/api/analyze`, `/api/clean`,
 `/api/upload-analyze`, and `/api/export-file`. Interactive API documentation is
 at `/docs`. To run the test suite, install `pytest`, `httpx`, and `pypdf`, then

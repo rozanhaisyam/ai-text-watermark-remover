@@ -18,7 +18,9 @@ import regex
 from docx import Document
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, Response
+from fastapi.responses import FileResponse, HTMLResponse, Response
+from fastapi.staticfiles import StaticFiles
+from jinja2 import Environment, FileSystemLoader, select_autoescape
 from pydantic import BaseModel, Field
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.pdfbase import pdfmetrics
@@ -175,6 +177,8 @@ class WatermarkEngine:
 
 engine = WatermarkEngine()
 app = FastAPI(title="UnicodeGuard API")
+app.mount("/assets", StaticFiles(directory=ROOT / "static"), name="assets")
+templates = Environment(loader=FileSystemLoader(ROOT / "templates"), autoescape=select_autoescape(["html", "xml"]))
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["GET", "POST"], allow_headers=["*"])
 
 
@@ -324,7 +328,7 @@ def export_file(body: ExportRequest):
 
 @app.get("/")
 def index():
-    return FileResponse(ROOT / "index.html")
+    return HTMLResponse(templates.get_template("index.html").render())
 
 
 @app.get("/styles.css")
