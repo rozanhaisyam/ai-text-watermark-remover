@@ -122,3 +122,19 @@ def test_pdf_unsupported_glyph_is_reported_not_silently_lost():
 def test_no_text_or_files_stored_between_requests():
     engine.analyze_text('secret\u200b')
     assert client.post('/api/analyze', json={'text':'plain'}).json()['stats']['total_findings'] == 0
+
+
+def test_deployment_entrypoint_reexports_app_and_honors_port(monkeypatch):
+    import runpy
+    import uvicorn
+    import main
+
+    assert main.app is app
+    calls = []
+    monkeypatch.setattr(uvicorn, "run", lambda application, **kwargs: calls.append((application, kwargs)))
+    monkeypatch.setenv("PORT", "9123")
+    runpy.run_module("main", run_name="__main__")
+    assert calls[-1] == (app, {"host": "0.0.0.0", "port": 9123})
+    monkeypatch.delenv("PORT")
+    runpy.run_module("main", run_name="__main__")
+    assert calls[-1] == (app, {"host": "0.0.0.0", "port": 8000})

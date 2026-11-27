@@ -58,6 +58,26 @@ uvicorn app:app --host 127.0.0.1 --port 8000
 # Open http://127.0.0.1:8000 in your browser
 ```
 
+For deployment, use `python main.py` as the start command. It binds to
+`0.0.0.0` and reads the `PORT` environment variable (default `8000`). Set your
+hosting platform's application port to the same value. Both `main:app` and
+`app:app` are valid ASGI imports; if the host uses a fixed command, use
+`uvicorn main:app --host 0.0.0.0 --port 8000` and configure port 8000. Install
+`requirements.txt` and run from the repository root so the application, static
+assets, and templates are available. The supplied Dockerfile uses the same
+entry point and installs a font for PDF export. For example:
+
+```bash
+docker build -t unicodeguard .
+docker run --rm -p 8000:8000 -e PORT=8000 unicodeguard
+```
+
+`EXPOSE 8000` documents the default container port. If the host provides a
+different `PORT`, configure its routing and any Docker port mapping to match.
+Do not infer the port from an import error: `Could not import module "main"`
+means the ASGI module could not be loaded; verify the start command, working
+directory, installed dependencies, and earlier log lines before changing ports.
+
 For a container or remote preview, bind to `0.0.0.0` instead. The frontend is
 served by the same FastAPI process and uses relative API URLs. The API accepts
 cross-origin requests and has **no authentication**. Run it only on a trusted
