@@ -1,4 +1,4 @@
-"""API integration tests for the UnicodeGuard web workspace."""
+"""API integration tests for the Unwatermark web workspace."""
 from io import BytesIO
 
 import pytest
@@ -138,3 +138,45 @@ def test_deployment_entrypoint_reexports_app_and_honors_port(monkeypatch):
     monkeypatch.delenv("PORT")
     runpy.run_module("main", run_name="__main__")
     assert calls[-1] == (app, {"host": "0.0.0.0", "port": 8000})
+
+
+def test_unwatermark_brand_and_domain_are_rendered():
+    html = client.get('/').text
+    assert '<title>Unwatermark |' in html
+    assert 'aria-label="Unwatermark home"' in html
+    assert 'fastizen.web.id' in html
+    assert 'https://fastizen.web.id' in html
+    assert '/assets/brand.svg' in html
+    assert client.get('/assets/brand.svg').status_code == 200
+    assert client.get('/openapi.json').json()['info']['title'] == 'Unwatermark API'
+
+
+def test_export_default_filename_uses_new_brand():
+    response = client.post('/api/export-file', json={'text': 'Hello', 'format': 'md'})
+    assert response.status_code == 200
+    assert response.headers['content-disposition'] == 'attachment; filename="unwatermark-clean.md"'
+
+
+def test_pdf_font_setting_keeps_legacy_fallback(monkeypatch):
+    from pathlib import Path
+    import app as web_app
+
+    font = Path('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf')
+    if not font.exists():
+        pytest.skip('test font not installed')
+    real_font = web_app.TTFont
+    used = []
+
+    def recording_font(name, path):
+        used.append(path)
+        return real_font(name, path)
+
+    monkeypatch.setattr(web_app, 'TTFont', recording_font)
+    monkeypatch.delenv('UNWATERMARK_PDF_FONT', raising=False)
+    monkeypatch.setenv('UNICODEGUARD_PDF_FONT', str(font))
+    assert client.post('/api/export-file', json={'text': 'Hello', 'format': 'pdf'}).status_code == 200
+    assert used[-1] == str(font)
+    monkeypatch.setenv('UNWATERMARK_PDF_FONT', str(font))
+    monkeypatch.setenv('UNICODEGUARD_PDF_FONT', '/does-not-exist.ttf')
+    assert client.post('/api/export-file', json={'text': 'Hello', 'format': 'pdf'}).status_code == 200
+    assert used[-1] == str(font)
