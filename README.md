@@ -44,6 +44,58 @@ the prose under the fact gate.
 
 ---
 
+## UnicodeGuard web workspace
+
+The web workspace adds a Python API and browser interface for inspecting Unicode
+characters. It flags character types for review; it does not identify AI authorship
+or detect statistical watermarks. The sample text is synthetic.
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+uvicorn app:app --host 127.0.0.1 --port 8000
+# Open http://127.0.0.1:8000 in your browser
+```
+
+For a container or remote preview, bind to `0.0.0.0` instead. The frontend is
+served by the same FastAPI process and uses relative API URLs. The API accepts
+cross-origin requests and has **no authentication**. Run it only on a trusted
+machine or network; do not expose it to the public internet without adding
+access controls and a deployment-specific security review. Text is sent to the
+Python server, processed in memory, and not deliberately saved or sent to an AI
+service. Server infrastructure and browser extensions can have their own logging
+or retention policies. Chart.js is bundled locally; there is no external CDN.
+
+Paste text, upload UTF-8 TXT/Markdown or a text-based PDF, and click Analyze.
+The table gives zero-based Unicode code-point offsets, not byte or UTF-16 offsets.
+Select Safe, Strict, or Aggressive and click Clean to review the before/after
+result before copying or downloading. Safe removes most format controls and
+normalizes nonstandard spaces. It preserves emoji ZWJ sequences using a
+heuristic, but may still change shaping in other scripts. Variation selectors and
+some other invisible characters are reported but preserved in Safe and Strict.
+Strict additionally transliterates the documented characters; Aggressive can
+remove non-ASCII language content and emoji. Exclusions use Unicode codes such
+as `U+200C`; U+202E is always removed. All modes can change meaning or layout,
+so review the result. These findings and the attention index are not proof of
+watermarking or AI origin.
+
+PDF input is extracted as text with PyMuPDF, with a maximum of 100 pages. Scanned
+PDFs need OCR, which is not included. PDF and DOCX exports are new text-only
+documents: original page layout, images, annotations, fonts, and metadata are
+not preserved. PDF export needs a TrueType font that covers the text; set
+`UNICODEGUARD_PDF_FONT` to a suitable font if the system default lacks glyphs.
+Complex-script shaping may still require review. The upload limit is 10 MB and
+text is limited to 500,000 Unicode code points. Downloads contain the reviewed
+text, not a guarantee that hidden or statistical watermarks are absent.
+
+API endpoints: `/api/reference`, `/api/analyze`, `/api/clean`,
+`/api/upload-analyze`, and `/api/export-file`. Interactive API documentation is
+at `/docs`. To run the test suite, install `pytest`, `httpx`, and `pypdf`, then
+run `PYTHONPATH=src:. python -m pytest`.
+
+---
+
 ## Clean and export
 
 Export a **copy** of a UTF-8 `.txt`, `.md`, or `.markdown` file to Markdown,

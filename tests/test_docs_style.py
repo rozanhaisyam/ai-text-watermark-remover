@@ -65,6 +65,8 @@ def _docs() -> list[Path]:
         p for p in ROOT.rglob("*.md")
         if ".git" not in p.parts
         and "node_modules" not in p.parts
+        and ".venv" not in p.parts
+        and "venv" not in p.parts
         and str(p.relative_to(ROOT)) not in EXEMPT
         and not _is_fixture(str(p.relative_to(ROOT)))
     ]
