@@ -17,14 +17,14 @@ function drawChart(s) {
   const values=s?[s.format_count,s.separator_count,s.visible_count,s.other_invisible_count]:[0,0,0,0];
   const empty=!values.some(Boolean);
   const emptyColor=getComputedStyle(document.documentElement).getPropertyValue('--border-strong').trim();
-  if(!state.chart){state.chart=new Chart($('donutChart'),{type:'doughnut',data:{labels:['Format controls','Special spaces','Visible characters','Other invisible'],datasets:[{data:empty?[1]:values,backgroundColor:empty?[emptyColor]:['#e58d81','#e8b978','#a994f5','#69b6a6'],borderWidth:0,spacing:3,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,cutout:'79%',plugins:{legend:{display:false},tooltip:{enabled:!empty}}}});}
-  else{state.chart.data.datasets[0].data=empty?[1]:values;state.chart.data.datasets[0].backgroundColor=empty?[emptyColor]:['#e58d81','#e8b978','#a994f5','#69b6a6'];state.chart.options.plugins.tooltip.enabled=!empty;state.chart.update();}
+  if(!state.chart){state.chart=new Chart($('donutChart'),{type:'doughnut',data:{labels:['Format controls','Special spaces','Visible characters','Other invisible'],datasets:[{data:empty?[1]:values,backgroundColor:empty?[emptyColor]:['#ec850f','#e8bd8f','#7c3fb0','#b891ca'],borderWidth:0,spacing:3,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,cutout:'79%',plugins:{legend:{display:false},tooltip:{enabled:!empty}}}});}
+  else{state.chart.data.datasets[0].data=empty?[1]:values;state.chart.data.datasets[0].backgroundColor=empty?[emptyColor]:['#ec850f','#e8bd8f','#7c3fb0','#b891ca'];state.chart.options.plugins.tooltip.enabled=!empty;state.chart.update();}
 }
 function drawBarChart(){
   if(typeof Chart==='undefined') return;
   const findings=(state.analysis?.detected_characters||[]).slice(0,8);
   $('barEmpty').hidden=findings.length>0;
-  if(!state.barChart){state.barChart=new Chart($('barChart'),{type:'bar',data:{labels:[],datasets:[{label:'Occurrences',data:[],backgroundColor:'#82b99a',borderRadius:4,barThickness:11}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,grid:{color:'#dce6dd'},ticks:{color:'#7b8c83',precision:0}},y:{grid:{display:false},ticks:{color:'#7b8c83'}}}}});}
+  if(!state.barChart){state.barChart=new Chart($('barChart'),{type:'bar',data:{labels:[],datasets:[{label:'Occurrences',data:[],backgroundColor:'#8c4fb3',borderRadius:4,barThickness:11}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,grid:{color:'#ece5ef'},ticks:{color:'#706479',precision:0}},y:{grid:{display:false},ticks:{color:'#706479'}}}}});}
   const theme=getComputedStyle(document.documentElement);state.barChart.options.scales.x.grid.color=theme.getPropertyValue('--border').trim();state.barChart.options.scales.x.ticks.color=theme.getPropertyValue('--muted').trim();state.barChart.options.scales.y.ticks.color=theme.getPropertyValue('--muted').trim();
   state.barChart.data.labels=findings.map(f=>f.unicode_code);state.barChart.data.datasets[0].data=findings.map(f=>f.count);state.barChart.update();
 }

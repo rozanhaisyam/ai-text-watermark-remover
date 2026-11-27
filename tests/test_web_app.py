@@ -146,8 +146,14 @@ def test_unwatermark_brand_and_domain_are_rendered():
     assert 'aria-label="Unwatermark home"' in html
     assert 'fastizen.web.id' in html
     assert 'https://fastizen.web.id' in html
-    assert '/assets/brand.svg' in html
+    assert 'rel="icon" type="image/png" href="/assets/fsti-logo-original.png"' in html
     assert client.get('/assets/brand.svg').status_code == 200
+    assert '/assets/fsti-logo.webp' in html
+    assert 'Fakultas Sains dan Teknologi Informasi, Universitas Widya Gama Malang' in html
+    logo = client.get('/assets/fsti-logo.webp')
+    assert logo.status_code == 200 and logo.headers['content-type'] == 'image/webp'
+    source = client.get('/assets/fsti-logo-original.png')
+    assert source.status_code == 200 and source.headers['content-type'] == 'image/png'
     assert client.get('/openapi.json').json()['info']['title'] == 'Unwatermark API'
 
 
@@ -180,3 +186,65 @@ def test_pdf_font_setting_keeps_legacy_fallback(monkeypatch):
     monkeypatch.setenv('UNICODEGUARD_PDF_FONT', '/does-not-exist.ttf')
     assert client.post('/api/export-file', json={'text': 'Hello', 'format': 'pdf'}).status_code == 200
     assert used[-1] == str(font)
+
+
+def test_webp_logo_matches_original_png():
+    from pathlib import Path
+    Image = pytest.importorskip('PIL.Image')
+
+    root = Path(__file__).resolve().parents[1] / 'static'
+    with Image.open(root / 'fsti-logo-original.png') as source, \
+            Image.open(root / 'fsti-logo.webp') as converted:
+        assert source.size == converted.size == (3304, 2554)
+        assert source.convert('RGBA').tobytes() == converted.convert('RGBA').tobytes()
+        assert source.info.get('icc_profile') == converted.info.get('icc_profile')
+
+
+def test_fsti_mark_crops_original_without_altering_pixels():
+    from pathlib import Path
+    Image = pytest.importorskip('PIL.Image')
+
+    root = Path(__file__).resolve().parents[1] / 'static'
+    with Image.open(root / 'fsti-logo-original.png') as source, \
+            Image.open(root / 'fsti-mark.png') as png, \
+            Image.open(root / 'fsti-mark.webp') as webp:
+        cropped = source.crop((212, 592, 3093, 1658)).convert('RGBA')
+        assert png.size == webp.size == cropped.size
+        assert png.convert('RGBA').tobytes() == cropped.tobytes()
+        assert webp.convert('RGBA').tobytes() == cropped.tobytes()
+        assert png.info.get('icc_profile') == webp.info.get('icc_profile') == source.info.get('icc_profile')
+
+
+def test_footer_has_institution_and_whatsapp_support():
+    from html.parser import HTMLParser
+
+    class FooterParser(HTMLParser):
+        def __init__(self):
+            super().__init__()
+            self.in_footer = False
+            self.text = []
+            self.links = []
+
+        def handle_starttag(self, tag, attrs):
+            if tag == 'footer':
+                self.in_footer = True
+            if self.in_footer and tag == 'a':
+                self.links.append(dict(attrs))
+
+        def handle_endtag(self, tag):
+            if tag == 'footer':
+                self.in_footer = False
+
+        def handle_data(self, data):
+            if self.in_footer:
+                self.text.append(data)
+
+    footer = FooterParser()
+    footer.feed(client.get('/').text)
+    text = ' '.join(footer.text)
+    assert 'Fakultas Sains dan Teknologi Informasi' in text
+    assert 'Universitas Widya Gama Malang' in text
+    assert 'Bantuan WhatsApp' in text
+    link = next(link for link in footer.links if link.get('href') == 'https://wa.me/6281331711385')
+    assert link['target'] == '_blank'
+    assert {'noopener', 'noreferrer'} <= set(link['rel'].split())
