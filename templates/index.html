@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4f6f0">
+  <title>UnicodeGuard | See the whole story in your text</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script defer src="/vendor/chart.umd.js"></script>
+  <script type="module" src="/script.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#inspector">Skip to text workspace</a>
+  {% include 'partials/icons.html' %}
+  {% include 'partials/header.html' %}
+  <main id="workspace" class="page-shell">
+    {% include 'partials/hero.html' %}
+    {% include 'partials/metrics.html' %}
+    {% include 'partials/workspace.html' %}
+    {% include 'partials/inspector.html' %}
+    {% include 'partials/findings.html' %}
+    {% include 'partials/reference-export.html' %}
+  </main>
+  {% include 'partials/footer.html' %}
+</body>
+</html>

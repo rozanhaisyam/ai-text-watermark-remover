@@ -9,6 +9,7 @@ pytest.importorskip("multipart")
 pytest.importorskip("reportlab")
 pytest.importorskip("regex")
 pytest.importorskip("httpx")
+pytest.importorskip("jinja2")
 Document = pytest.importorskip("docx").Document
 from fastapi.testclient import TestClient
 
@@ -24,6 +25,33 @@ def test_reference_and_frontend():
     ref = client.get('/api/reference').json()
     assert len(ref['hidden']) == 8 and len(ref['visible']) == 14
     assert {v['unicode_code'] for v in ref['hidden']} >= {'U+200B', 'U+202E'}
+
+
+def test_modular_frontend_renders_unique_hooks_and_serves_assets():
+    from html.parser import HTMLParser
+    from collections import Counter
+
+    class Hooks(HTMLParser):
+        def __init__(self):
+            super().__init__()
+            self.ids = []
+            self.modules = []
+
+        def handle_starttag(self, tag, attrs):
+            attrs = dict(attrs)
+            if "id" in attrs:
+                self.ids.append(attrs["id"])
+            if tag == "script" and attrs.get("type") == "module":
+                self.modules.append(attrs.get("src"))
+
+    hooks = Hooks()
+    hooks.feed(client.get('/').text)
+    assert not [key for key, count in Counter(hooks.ids).items() if count > 1]
+    assert {'inputText', 'analyzeBtn', 'cleanBtn', 'xrayText', 'findingsBody', 'themeToggle'} <= set(hooks.ids)
+    assert hooks.modules == ['/script.js']
+    for path in ('/assets/js/core.js', '/assets/js/actions.js', '/assets/js/views.js',
+                 '/assets/css/tokens.css', '/assets/css/layout.css', '/assets/css/responsive.css'):
+        assert client.get(path).status_code == 200
 
 
 def test_analysis_uses_codepoint_offsets_and_honest_notice():
@@ -94,3 +122,19 @@ def test_pdf_unsupported_glyph_is_reported_not_silently_lost():
 def test_no_text_or_files_stored_between_requests():
     engine.analyze_text('secret\u200b')
     assert client.post('/api/analyze', json={'text':'plain'}).json()['stats']['total_findings'] == 0
+
+
+def test_deployment_entrypoint_reexports_app_and_honors_port(monkeypatch):
+    import runpy
+    import uvicorn
+    import main
+
+    assert main.app is app
+    calls = []
+    monkeypatch.setattr(uvicorn, "run", lambda application, **kwargs: calls.append((application, kwargs)))
+    monkeypatch.setenv("PORT", "9123")
+    runpy.run_module("main", run_name="__main__")
+    assert calls[-1] == (app, {"host": "0.0.0.0", "port": 9123})
+    monkeypatch.delenv("PORT")
+    runpy.run_module("main", run_name="__main__")
+    assert calls[-1] == (app, {"host": "0.0.0.0", "port": 8000})
