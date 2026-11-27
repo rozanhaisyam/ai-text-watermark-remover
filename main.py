@@ -1,4 +1,4 @@
-"""Deployment entry point for the UnicodeGuard FastAPI application.
+"""Deployment entry point for the Unwatermark FastAPI application.
 
 Both ``uvicorn main:app`` and ``python main.py`` use the same application as
 ``uvicorn app:app``. The latter command reads the platform's PORT variable.

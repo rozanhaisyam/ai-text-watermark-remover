@@ -44,9 +44,9 @@ the prose under the fact gate.
 
 ---
 
-## UnicodeGuard web workspace
+## Unwatermark web workspace
 
-The web workspace adds a Python API and browser interface for inspecting Unicode
+Unwatermark, branded for `fastizen.web.id`, adds a Python API and browser interface for inspecting Unicode
 characters. It flags character types for review; it does not identify AI authorship
 or detect statistical watermarks. The sample text is synthetic.
 
@@ -68,8 +68,8 @@ assets, and templates are available. The supplied Dockerfile uses the same
 entry point and installs a font for PDF export. For example:
 
 ```bash
-docker build -t unicodeguard .
-docker run --rm -p 8000:8000 -e PORT=8000 unicodeguard
+docker build -t unwatermark .
+docker run --rm -p 8000:8000 -e PORT=8000 unwatermark
 ```
 
 `EXPOSE 8000` documents the default container port. If the host provides a
@@ -104,7 +104,8 @@ PDF input is extracted as text with PyMuPDF, with a maximum of 100 pages. Scanne
 PDFs need OCR, which is not included. PDF and DOCX exports are new text-only
 documents: original page layout, images, annotations, fonts, and metadata are
 not preserved. PDF export needs a TrueType font that covers the text; set
-`UNICODEGUARD_PDF_FONT` to a suitable font if the system default lacks glyphs.
+`UNWATERMARK_PDF_FONT` to a suitable font if the system default lacks glyphs.
+The older `UNICODEGUARD_PDF_FONT` variable remains supported.
 Complex-script shaping may still require review. The upload limit is 10 MB and
 text is limited to 500,000 Unicode code points. Downloads contain the reviewed
 text, not a guarantee that hidden or statistical watermarks are absent.

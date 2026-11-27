@@ -1,4 +1,4 @@
-"""UnicodeGuard: a local document-inspection API and static web application.
+"""Unwatermark: a local document-inspection API and static web application.
 
 Unicode findings are character observations, not proof of AI authorship or a
 watermark.  Nothing is stored by the application between requests.
@@ -176,7 +176,7 @@ class WatermarkEngine:
 
 
 engine = WatermarkEngine()
-app = FastAPI(title="UnicodeGuard API")
+app = FastAPI(title="Unwatermark API")
 app.mount("/assets", StaticFiles(directory=ROOT / "static"), name="assets")
 templates = Environment(loader=FileSystemLoader(ROOT / "templates"), autoescape=select_autoescape(["html", "xml"]))
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["GET", "POST"], allow_headers=["*"])
@@ -193,7 +193,7 @@ class CleanRequest(TextRequest):
 
 class ExportRequest(TextRequest):
     format: Literal["pdf", "md", "txt", "docx"]
-    filename: str = Field(default="unicodeguard-clean", max_length=100)
+    filename: str = Field(default="unwatermark-clean", max_length=100)
 
 
 def validate_text(text: str) -> None:
@@ -270,21 +270,22 @@ async def upload_analyze(file: UploadFile = File(...)):
 
 def pdf_bytes(text: str) -> bytes:
     from html import escape
-    font_candidates = [os.environ.get("UNICODEGUARD_PDF_FONT", ""),
+    font_candidates = [os.environ.get("UNWATERMARK_PDF_FONT", ""),
+                       os.environ.get("UNICODEGUARD_PDF_FONT", ""),
                        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
                        "/Library/Fonts/Arial Unicode.ttf", "/Library/Fonts/Arial.ttf", "C:/Windows/Fonts/arial.ttf"]
     font_path = next((p for p in font_candidates if p and Path(p).is_file()), None)
     if not font_path:
-        raise HTTPException(422, "No PDF TTF font found. Set UNICODEGUARD_PDF_FONT.")
-    font = TTFont("UnicodeGuardFont", font_path)
+        raise HTTPException(422, "No PDF TTF font found. Set UNWATERMARK_PDF_FONT.")
+    font = TTFont("UnwatermarkFont", font_path)
     missing = {c for c in text if not c.isspace() and ord(c) not in font.face.charWidths}
     if missing:
         codes = ", ".join(code(c) for c in sorted(missing)[:8])
-        raise HTTPException(422, f"PDF font does not support {codes}. Choose a suitable TTF with UNICODEGUARD_PDF_FONT.")
+        raise HTTPException(422, f"PDF font does not support {codes}. Choose a suitable TTF with UNWATERMARK_PDF_FONT.")
     pdfmetrics.registerFont(font)
     result = io.BytesIO()
     doc = SimpleDocTemplate(result, title="", author="", leftMargin=54, rightMargin=54)
-    style = ParagraphStyle("plain", fontName="UnicodeGuardFont", fontSize=10, leading=15, spaceAfter=4, splitLongWords=True)
+    style = ParagraphStyle("plain", fontName="UnwatermarkFont", fontSize=10, leading=15, spaceAfter=4, splitLongWords=True)
     story = []
     if any(ord(ch) < 32 and ch not in "\n\r\t\f" for ch in text):
         raise HTTPException(422, "PDF cannot represent control characters; clean or remove them first.")
@@ -307,7 +308,7 @@ def pdf_bytes(text: str) -> bytes:
 @app.post("/api/export-file")
 def export_file(body: ExportRequest):
     validate_text(body.text)
-    name = re.sub(r"[^A-Za-z0-9_-]", "-", Path(body.filename).stem).strip("-_") or "unicodeguard-clean"
+    name = re.sub(r"[^A-Za-z0-9_-]", "-", Path(body.filename).stem).strip("-_") or "unwatermark-clean"
     ext = body.format
     if ext == "pdf":
         data, media = pdf_bytes(body.text), "application/pdf"
