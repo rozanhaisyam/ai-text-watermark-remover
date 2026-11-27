@@ -115,6 +115,9 @@ Shared visual tokens and responsive components live under `static/css/`, and the
 browser logic is split into core, actions, and view modules under `static/js/`.
 `script.js` wires the components together; `styles.css` imports the CSS partials.
 The frontend has no build step and serves its assets from the FastAPI app.
+The FSTI logo is kept as the original PNG in `static/fsti-logo-original.png`;
+`static/fsti-logo.webp` is a lossless, uncropped WebP with the same pixels and
+color profile. The header uses WebP and the favicon uses the original PNG.
 
 API endpoints: `/api/reference`, `/api/analyze`, `/api/clean`,
 `/api/upload-analyze`, and `/api/export-file`. Interactive API documentation is
