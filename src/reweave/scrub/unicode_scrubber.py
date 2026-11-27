@@ -77,8 +77,8 @@ class UnicodeScrubber(Scrubber):
         text = "".join(out_chars)
         # NFKC folds compatibility variants (e.g. ﬁ ligature, full-width forms).
         text = unicodedata.normalize("NFKC", text)
-        # Collapse runs of spaces introduced by the substitutions, keep newlines.
-        text = "\n".join(" ".join(line.split()) for line in text.split("\n"))
+        # Whitespace is meaningful in Markdown and code (indentation, hard breaks,
+        # and tables). Do not collapse it while cleaning characters.
 
         meta = dict(doc.meta)
         meta["scrubbed"] = True

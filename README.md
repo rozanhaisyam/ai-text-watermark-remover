@@ -5,10 +5,10 @@ text from its meaning instead of editing its surface.** Scheme-blind, runs
 entirely on local open-weight models, and every claim below is a number you can
 reproduce.
 
-Watermark removal here is a side effect, not a trick. The system regenerates the
-token sequence from a meaning representation. Every token-level watermark lives
-in that token sequence, so it does not survive, whether or not we have ever heard
-of the scheme.
+When requested, the system can regenerate text from a meaning representation.
+That may weaken a statistical watermark, but it does not guarantee removal:
+the rewrite may retain original tokens or not run at all. The offline cleanup
+only handles metadata and character artifacts, not statistical watermarks.
 
 ```bash
 git clone https://github.com/Shreyan1/ai-text-watermark-remover
@@ -41,6 +41,48 @@ source URL sitting in an extended attribute, untouched by anything you do to the
 text. `reweave fix` runs the whole sequence in one bounded loop; it is fully
 offline unless you add `--regenerate`, which brings in a local model to rewrite
 the prose under the fact gate.
+
+---
+
+## Clean and export
+
+Export a **copy** of a UTF-8 `.txt`, `.md`, or `.markdown` file to Markdown,
+PDF, and DOCX. PDF/DOCX export uses optional local libraries; Markdown-only export
+needs no extras. Create the output directory first:
+
+```bash
+pip install -e '.[export]'           # or pipx install -e '.[export]'
+mkdir -p exports
+reweave export answer.md -o exports  # writes answer.md, answer.pdf, answer.docx
+reweave export answer.md -o exports -f md -f docx  # choose formats
+reweave export answer.md -o exports --force        # replace existing exports
+reweave export answer.md -o exports --regenerate   # local Ollama, fact-gated
+```
+
+The input is never changed or overwritten, even with `--force`. Choose a
+separate output directory for Markdown inputs. Outputs are generated before any
+are published; a rendering failure leaves existing files untouched. Each output
+file is then published separately, so filesystem errors during publication can
+still leave a partial set. The output names derive from the source filename and
+may themselves identify the source. The source's filesystem attributes are not
+copied, inspected, or changed; generated documents may contain ordinary format
+metadata. Inspect files and names separately if provenance matters.
+
+The default offline path removes selected attribution and character artifacts;
+**it does not remove or detect statistical watermarks**. `--regenerate` requests
+a local Ollama rewrite and fails without exporting if Ollama is unavailable or
+the workflow does not converge. It may leave text unchanged if its heuristic
+score already meets the threshold, and neither that score nor regeneration
+proves a vendor watermark was removed. Review the output and retained facts.
+Character normalization can change scripts, typography, and code; review it
+carefully. `fix` remains an in-place text-only operation.
+
+PDF and DOCX provide a basic CommonMark rendering (headings, paragraphs, lists,
+code, links as text, and DOCX emphasis); complex layout, tables, images, HTML,
+syntax highlighting and PDF emphasis are not faithfully reproduced. PDF requires
+a TrueType font covering the text; use `--pdf-font /path/to/font.ttf` if the
+automatic system font is missing or lacks glyphs. Check PDFs for complex-script
+shaping and layout. Export does not accept PDF or DOCX input.
 
 ---
 

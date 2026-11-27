@@ -28,7 +28,13 @@ def _seed_wherefrom(path: Path, url: str) -> bool:
 
     blob = plistlib.dumps([url], fmt=plistlib.FMT_BINARY)
     if hasattr(os, "setxattr"):
-        os.setxattr(str(path), "com.apple.metadata:kMDItemWhereFroms", blob)
+        # Linux only allows user.* attributes for unprivileged users.
+        key = "user.xdg.origin.url" if sys.platform.startswith("linux") else "com.apple.metadata:kMDItemWhereFroms"
+        value = url.encode() if key.startswith("user.") else blob
+        try:
+            os.setxattr(str(path), key, value)
+        except OSError:
+            return False
         return True
     if _XATTR:
         subprocess.run([_XATTR, "-wx", "com.apple.metadata:kMDItemWhereFroms",
@@ -68,6 +74,7 @@ def test_fix_strips_metadata_and_scrubs_unicode_offline():
     if seeded:
         left = {f.key for f in FileMetadataScrubber().inspect(res.path).findings}
         assert "com.apple.metadata:kMDItemWhereFroms" not in left
+        assert "user.xdg.origin.url" not in left
 
 
 def test_fix_is_idempotent():

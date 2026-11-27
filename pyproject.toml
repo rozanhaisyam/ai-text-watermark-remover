@@ -38,9 +38,10 @@ harness = ["markllm>=0.1"]
 # Optional trained NLI cross-encoder for the fact gate. NOT required: the
 # shipped backend prompts a local Ollama model and needs no Python deps at all.
 verify = ["transformers>=4.40", "torch>=2.2"]
-dev = ["pytest>=8", "ruff>=0.5", "mypy>=1.10"]
+export = ["markdown-it-py>=3", "python-docx>=1.1", "reportlab>=4"]
+dev = ["pytest>=8", "ruff>=0.5", "mypy>=1.10", "pypdf>=4"]
 all = [
-  "ai-text-watermark-remover[score,guard,regenerate,harness,verify,dev]",
+  "ai-text-watermark-remover[score,guard,regenerate,harness,verify,export,dev]",
 ]
 
 [project.scripts]
