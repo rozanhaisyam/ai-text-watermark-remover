@@ -213,3 +213,38 @@ def test_fsti_mark_crops_original_without_altering_pixels():
         assert png.convert('RGBA').tobytes() == cropped.tobytes()
         assert webp.convert('RGBA').tobytes() == cropped.tobytes()
         assert png.info.get('icc_profile') == webp.info.get('icc_profile') == source.info.get('icc_profile')
+
+
+def test_footer_has_institution_and_whatsapp_support():
+    from html.parser import HTMLParser
+
+    class FooterParser(HTMLParser):
+        def __init__(self):
+            super().__init__()
+            self.in_footer = False
+            self.text = []
+            self.links = []
+
+        def handle_starttag(self, tag, attrs):
+            if tag == 'footer':
+                self.in_footer = True
+            if self.in_footer and tag == 'a':
+                self.links.append(dict(attrs))
+
+        def handle_endtag(self, tag):
+            if tag == 'footer':
+                self.in_footer = False
+
+        def handle_data(self, data):
+            if self.in_footer:
+                self.text.append(data)
+
+    footer = FooterParser()
+    footer.feed(client.get('/').text)
+    text = ' '.join(footer.text)
+    assert 'Fakultas Sains dan Teknologi Informasi' in text
+    assert 'Universitas Widya Gama Malang' in text
+    assert 'Bantuan WhatsApp' in text
+    link = next(link for link in footer.links if link.get('href') == 'https://wa.me/6281331711385')
+    assert link['target'] == '_blank'
+    assert {'noopener', 'noreferrer'} <= set(link['rel'].split())

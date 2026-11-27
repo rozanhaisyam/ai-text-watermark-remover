@@ -61,3 +61,17 @@
 .brand-name { border-left:1px solid var(--border-strong);padding-left:12px; }
 .brand-name>span { color:var(--green); }
 .hero h1 em { text-decoration:underline;text-decoration-color:var(--brand-orange);text-decoration-thickness:3px;text-underline-offset:7px; }
+/* Footer identity and support */
+.footer-inner { align-items:center; gap:24px; padding-top:26px; padding-bottom:26px; }
+.footer-identity { min-width:0; }
+.footer-institution { margin:9px 0 5px; color:var(--ink); font-size:11px; font-weight:650; line-height:1.6; }
+.footer-description { margin:0; color:var(--muted); font-size:10px; }
+.footer-support { display:flex; align-items:center; gap:16px; }
+.footer-support strong, .footer-support span { display:block; }
+.footer-support strong { color:var(--ink); font-size:12px; }
+.footer-support div span { margin-top:3px; color:var(--muted); font-size:10px; }
+.footer a.support-button { display:inline-flex; align-items:center; justify-content:center; gap:8px; flex-shrink:0; padding:11px 14px; border:1px solid var(--green-deep); border-radius:10px; background:var(--green-deep); color:#fff; font-size:11px; font-weight:750; text-decoration:none; transition:transform .18s,background .18s,box-shadow .18s; }
+.support-button svg { width:17px; height:17px; }
+.support-button span { font-size:14px; }
+.footer a.support-button:hover { background:#7423a9; transform:translateY(-2px); box-shadow:0 8px 18px #5a1a9a30; }
+.footer a.support-button:active { transform:translateY(0); }

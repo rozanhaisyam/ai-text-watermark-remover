@@ -5,3 +5,5 @@
 @media (max-width:600px) { .institution-logo { width:84px;height:56px;padding:2px 3px; } .brand { gap:7px; } .brand-name { padding-left:8px; } }
 @media (max-width:360px) { .institution-logo { width:78px; } .brand-name { font-size:13px; } .header-actions { gap:8px; } }
 @media (max-width:360px) { .action-right { display:grid;grid-template-columns:minmax(0,1fr); } .action-right select,.action-right .button { width:100%; } }
+@media (max-width:600px) { .footer-inner { align-items:stretch; gap:18px; } .footer-support { justify-content:space-between; gap:10px; flex-wrap:wrap; } }
+@media (max-width:360px) { .footer-support { align-items:flex-start; flex-direction:column; } }
