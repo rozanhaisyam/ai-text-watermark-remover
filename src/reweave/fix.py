@@ -30,6 +30,7 @@ What "fixed" means differs by stage, and the report says so honestly:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from pathlib import Path
 
 from .core.types import Document, VoiceProfile
 from .scrub.metadata_scrubber import FileMetadataScrubber
@@ -108,6 +109,10 @@ def run_fix(
     start_aggressiveness: float = 0.45,
     aggressiveness_step: float = 0.18,
 ) -> FixResult:
+    if Path(path).suffix.lower() not in {".md", ".markdown", ".txt", ".mdx", ".rst", ".html", ".htm"}:
+        raise ValueError("fix only accepts UTF-8 text files, not PDF or DOCX")
+    if max_passes < 1 or not 0 <= threshold <= 1:
+        raise ValueError("max-passes must be positive and threshold must be between 0 and 1")
     scorer = StatisticalScorer()
     voice = VoiceProfile()
     result = FixResult(path=path, regenerate=regenerate)

@@ -156,7 +156,6 @@ def cmd_fix(args: argparse.Namespace) -> int:
     Operates in place on the given file (like `meta` and `scrub` already do).
     Offline unless --regenerate is passed.
     """
-    from ._ollama import WatermarkRiskError
     from .fix import run_fix
     from .scrub.metadata_scrubber import XattrUnsupported
 
@@ -173,7 +172,7 @@ def cmd_fix(args: argparse.Namespace) -> int:
     except XattrUnsupported as e:
         print(f"! {e}", file=sys.stderr)
         return 2
-    except WatermarkRiskError as e:
+    except (ValueError, OSError, UnicodeError) as e:
         print(f"! {e}", file=sys.stderr)
         return 2
 
@@ -205,8 +204,37 @@ def cmd_fix(args: argparse.Namespace) -> int:
     # user asked to strip and scrub, and that succeeded. Failure is metadata we
     # could not remove, or a --regenerate run that never cleared the bar.
     meta_left = any(r.startswith("metadata still present") for r in res.residual)
-    score_fail = res.regenerate and res.final_score < args.threshold
+    score_fail = args.regenerate and (not res.regenerate or res.final_score < args.threshold)
     return 0 if (res.converged and not meta_left and not score_fail) else 1
+
+
+def cmd_export(args: argparse.Namespace) -> int:
+    """Clean a copy and export without changing the source file."""
+    from .export import export_cleaned
+    from .scrub.metadata_scrubber import XattrUnsupported
+
+    try:
+        result = export_cleaned(
+            args.input, args.output_dir, set(args.formats or ["md", "pdf", "docx"]),
+            force=args.force, regenerate=args.regenerate, model=args.model,
+            allow_unlisted=args.allow_model, threshold=args.threshold,
+            max_passes=args.max_passes, pdf_font=args.pdf_font,
+        )
+    except (ValueError, OSError, UnicodeError, XattrUnsupported) as exc:
+        print(f"! {exc}", file=sys.stderr)
+        return 2
+    print("Source unchanged. Exported:")
+    for path in result.files:
+        print(f"  {path}")
+    print(f"Human-signature: {result.fix.final_score:.3f} (heuristic, not a watermark detector)")
+    if not args.regenerate:
+        print("Offline cleanup does not remove or verify statistical watermarks; "
+              "use --regenerate for a local model rewrite.")
+    else:
+        print("Regeneration does not prove removal of an unknown vendor watermark; review the text.")
+    for message in result.fix.residual:
+        print(f"  Note: {message}")
+    return 0
 
 
 def cmd_run(args: argparse.Namespace) -> int:
@@ -267,6 +295,20 @@ def main(argv: list[str] | None = None) -> int:
     px.add_argument("--max-passes", type=int, default=3,
                     help="hard cap on loop passes (default 3)")
     px.set_defaults(func=cmd_fix)
+
+    pe = sub.add_parser("export", help="clean a copy and export Markdown, PDF and DOCX")
+    pe.add_argument("input", help="UTF-8 .txt or Markdown source (left unchanged)")
+    pe.add_argument("-o", "--output-dir", default=".", help="existing output directory")
+    pe.add_argument("-f", "--format", dest="formats", action="append",
+                    choices=("md", "pdf", "docx"), help="output format; repeat, default all")
+    pe.add_argument("--force", action="store_true", help="replace existing outputs, never input")
+    pe.add_argument("--pdf-font", help="TrueType font covering the document's characters")
+    pe.add_argument("--regenerate", action="store_true", help="rewrite with local Ollama")
+    pe.add_argument("--model", default="gemma3:4b")
+    pe.add_argument("--allow-model", action="store_true", help="allow an unlisted local model")
+    pe.add_argument("--threshold", type=float, default=0.70)
+    pe.add_argument("--max-passes", type=int, default=3)
+    pe.set_defaults(func=cmd_export)
 
     pr = sub.add_parser("run", help="full pipeline (needs model backends)")
     pr.add_argument("input", nargs="?", default="-")
